@@ -24,14 +24,58 @@ app.get('/', async (req, res) => {
     const todos = await Todo.find();
     let todoList = todos.map(todo => `<li>${todo.text}</li>`).join('');
     res.send(`
-        <h1>Todo List</h1>
-        <form action="/add-todo" method="post">
-            <input type="text" name="todo" placeholder="Add new todo">
-            <button type="submit">Add</button>
-        </form>
-        <ul>${todoList}</ul>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+                form, ul {
+                    width: 90%;
+                    max-width: 400px;
+                }
+                input, button {
+                    width: 100%;
+                    padding: 10px;
+                    margin: 5px 0;
+                }
+                ul {
+                    list-style-type: none;
+                    padding: 0;
+                }
+                li {
+                    background-color: #f4f4f4;
+                    margin: 5px 0;
+                    padding: 10px;
+                    border-radius: 4px;
+                }
+                /* Responsive design for tablets and larger devices */
+                @media (min-width: 600px) {
+                    form, ul {
+                        width: 80%;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Todo List</h1>
+            <form action="/add-todo" method="post">
+                <input type="text" name="todo" placeholder="Add new todo">
+                <button type="submit">Add</button>
+            </form>
+            <ul>${todoList}</ul>
+        </body>
+        </html>
     `);
 });
+
 
 app.post('/add-todo', (req, res) => {
     const newTodo = new Todo({ text: req.body.todo });
