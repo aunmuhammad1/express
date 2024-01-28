@@ -42,7 +42,6 @@ app.get('/', async (req, res) => {
                     max-width: 400px;
                 }
                 input, button {
-                    width: 80%;
                     padding: 10px;
                     margin: 5px 0;
                 }
