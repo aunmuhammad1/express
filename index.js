@@ -6,7 +6,7 @@ const session = require('express-session');
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(session({
-    secret: 'your_secret_key',
+    secret: '123',
     resave: false,
     saveUninitialized: true
 }));
