@@ -1,87 +1,119 @@
 const express = require('express');
-const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const twilio = require('twilio');
+const session = require('express-session');
+
 const app = express();
-const port = 3000;
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(session({
+    secret: 'your_secret_key',
+    resave: false,
+    saveUninitialized: true
+}));
 
-const mongodburi = "mongodb+srv://daro-time:darotimepassword123@cluster0.1hcpvfd.mongodb.net/?retryWrites=true&w=majority"
+const accountSid = 'AC6fb90ceaf271a4db8d8efe17a28737e1';
+const authToken = '853c1f204c57f85ae0b83545728d02b2';
+const verifySid = 'VAda24070c32aef5bc9d6ff232f7c6b4c2';
+const client = twilio(accountSid, authToken);
 
-// Connect to MongoDB
-mongoose.connect(mongodburi, { useNewUrlParser: true, useUnifiedTopology: true });
-
-// Define a schema for Todo
-const TodoSchema = new mongoose.Schema({
-    text: String
-});
-
-// Create a model
-const Todo = mongoose.model('Todo', TodoSchema);
-
-// Middleware
-app.use(express.urlencoded({ extended: true }));
-
-// Routes
-app.get('/', async (req, res) => {
-    const todos = await Todo.find();
-    let todoList = todos.map(todo => `<li>${todo.text}</li>`).join('');
+app.get('/', (req, res) => {
     res.send(`
-        <!DOCTYPE html>
         <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                }
-                form, ul {
-                    width: 90%;
-                    max-width: 400px;
-                }
-                input, button {
-                    padding: 10px;
-                    margin: 5px 0;
-                }
-                ul {
-                    list-style-type: none;
-                    padding: 0;
-                }
-                li {
-                    background-color: #f4f4f4;
-                    margin: 5px 0;
-                    padding: 10px;
-                    border-radius: 4px;
-                }
-                /* Responsive design for tablets and larger devices */
-                @media (min-width: 600px) {
-                    form, ul {
-                        width: 80%;
+            <head>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        background-color: #f4f4f4;
                     }
-                }
-            </style>
-        </head>
-        <body>
-            <h1>Todo List</h1>
-            <form action="/add-todo" method="post">
-                <input type="text" name="todo" placeholder="Add new todo">
-                <button type="submit">Add</button>
-            </form>
-            <ul>${todoList}</ul>
-        </body>
+                    form {
+                        background-color: #fff;
+                        padding: 20px;
+                        border-radius: 8px;
+                        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                    }
+                    label {
+                        font-weight: bold;
+                        display: block;
+                        margin-bottom: 5px;
+                    }
+                    input[type="text"] {
+                        width: 100%;
+                        padding: 10px;
+                        margin-bottom: 10px;
+                        border-radius: 4px;
+                        border: 1px solid #ddd;
+                    }
+                    input[type="submit"] {
+                        background-color: #007BFF;
+                        color: #fff;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 10px 15px;
+                        cursor: pointer;
+                    }
+                    input[type="submit"]:hover {
+                        background-color: #0056b3;
+                    }
+                </style>
+            </head>
+            <body>
+                <form action="/send-otp" method="post">
+                    <label for="phone">Phone Number:</label>
+                    <input type="text" id="phone" name="phone" required>
+                    <input type="submit" value="Send OTP">
+                </form>
+                <form action="/verify-otp" method="post">
+                    <label for="otp">OTP:</label>
+                    <input type="text" id="otp" name="otp" required>
+                    <input type="submit" value="Verify OTP">
+                </form>
+            </body>
         </html>
     `);
 });
 
+app.post('/send-otp', (req, res) => {
+    const phone = req.body.phone;
+    req.session.phone = phone; // store the phone number in the session
 
-app.post('/add-todo', (req, res) => {
-    const newTodo = new Todo({ text: req.body.todo });
-    newTodo.save().then(() => res.redirect('/'));
+    client.verify.services(verifySid)
+        .verifications.create({ to: phone, channel: 'sms' })
+        .then((verification) => {
+            console.log(verification.status);
+            res.send('OTP sent successfully');
+        })
+        .catch((err) => {
+            console.error(err);
+            res.send('Failed to send OTP');
+        });
 });
 
-// Start the server
-app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+app.post('/verify-otp', (req, res) => {
+    const phone = req.session.phone; // retrieve the phone number from the session
+    const otpCode = req.body.otp;
+
+    client.verify.services(verifySid)
+        .verificationChecks.create({ to: phone, code: otpCode })
+        .then((verification_check) => {
+            console.log(verification_check.status);
+            if (verification_check.status === 'approved') {
+                res.send('OTP verified successfully');
+            } else {
+                res.send('Invalid OTP');
+            }
+        })
+        .catch((err) => {
+            console.error(err);
+            res.send('Failed to verify OTP');
+        });
+});
+
+app.listen(3000, () => {
+    console.log('Server is running on port 3000');
 });
