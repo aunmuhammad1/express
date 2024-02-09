@@ -10,7 +10,7 @@ app.get('/', (req, res) => {
 
 app.get('/sendmail', (req, res) => {
     const transporter = nodemailer.createTransport({
-        host: 'smtp.webmail.daroo-time.com',
+        host: 'smtp.daroo-time.com',
         port: 587,
         auth: {
             user: 'admin@daroo-time.com',
