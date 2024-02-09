@@ -10,11 +10,11 @@ app.get('/', (req, res) => {
 
 app.get('/sendmail', (req, res) => {
     const transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
+        host: 'smtp.gmail.com',
         port: 587,
         auth: {
-            user: 'aubree.wilderman@ethereal.email',
-            pass: 'nPVUxQjTp6xF93FBRD'
+            user: 'aunblogger.seo@gmail.com',
+            pass: 'lxia amvc izqa nugq'
         }
     });
 
