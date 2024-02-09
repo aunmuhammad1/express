@@ -10,11 +10,11 @@ app.get('/', (req, res) => {
 
 app.get('/sendmail', (req, res) => {
     const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
+        host: 'smtp.server.host2cp.com',
         port: 587,
         auth: {
-            user: 'aunblogger.seo@gmail.com',
-            pass: 'lxia amvc izqa nugq'
+            user: 'admin@daroo-time.com',
+            pass: 'Daroo@8520'
         }
     });
 
