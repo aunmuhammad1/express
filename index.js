@@ -7,7 +7,7 @@ app.get('/', (req, res) => {
     }
 );
 
-app.get('sendmail', (req, res) => {
+app.get('/sendmail', (req, res) => {
     res.send('Mail sent!');
 })
 
