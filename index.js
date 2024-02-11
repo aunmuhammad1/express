@@ -14,6 +14,12 @@ const googleapi = require('./googledriveapi.json');
 const app = express();
 app.use(bodyParser.json());
 const upload = multer({ dest: '/tmp/uploads/' });
+const uploadsDir = '/tmp/uploads';
+
+if (!fs.existsSync(uploadsDir)){
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 
 // Google Drive API setup
 const drive = google.drive({
