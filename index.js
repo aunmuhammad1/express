@@ -30,7 +30,7 @@ app.post('/send-otp', async (req, res) => {
   const { email } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit OTP
   const mailOptions = {
-    from: process.env.EMAIL_USERNAME,
+    from: 'admin@daroo-time.com',
     to: email,
     subject: 'Your OTP',
     text: `Your OTP is ${otp}`,
