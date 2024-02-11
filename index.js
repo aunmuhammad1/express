@@ -1,43 +1,61 @@
+require('dotenv').config();
 const express = require('express');
-const app = express();
-const port = 3000;
+const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
+const bodyParser = require('body-parser');
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-    }
-);
+const app = express();
+app.use(bodyParser.json());
 
-app.get('/sendmail', (req, res) => {
-    const transporter = nodemailer.createTransport({
-        host: 'smtp.server.host2cp.com',
-        port: 465,
-        auth: {
-            user: 'admin@daroo-time.com',
-            pass: 'Daroo@8520'
-        }
-    });
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
-    const mailOptions = {
-        from: 'aun',
-        to: 'aunmuhammad6307@gmail.com',
-        subject: 'Sending Email using Node.js',
-        text: 'That was easy!',
-        html: '<h1>Welcome</h1><p>That was easy!</p>'
-    };
+const otpSchema = new mongoose.Schema({
+  email: String,
+  otp: String,
+  createdAt: { type: Date, default: Date.now, index: { expires: 300 } }, // OTP expires after 300 seconds (5 minutes)
+});
+const OTP = mongoose.model('OTP', otpSchema);
 
-    transporter.sendMail(mailOptions, function(error, info){
-        if (error) {
-            console.log(error);
-            res.send('Error');
-        } else {
-            console.log('Email sent: ' + info.response);
-            res.send('Email sent: ' + info.response);
-        }
-    });
-})
+// Nodemailer setup
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE,
+  auth: {
+    user: process.env.EMAIL_USERNAME,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
 
-app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`);
-    }
-);
+// API endpoint to send OTP
+app.post('/send-otp', async (req, res) => {
+  const { email } = req.body;
+  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit OTP
+  const mailOptions = {
+    from: process.env.EMAIL_USERNAME,
+    to: email,
+    subject: 'Your OTP',
+    text: `Your OTP is ${otp}`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    await OTP.create({ email, otp });
+    res.send('OTP sent to your email');
+  } catch (error) {
+    res.status(500).send('Error sending OTP');
+  }
+});
+
+// API endpoint to verify OTP
+app.post('/verify-otp', async (req, res) => {
+  const { email, otp } = req.body;
+  const foundOTP = await OTP.findOne({ email, otp });
+
+  if (foundOTP) {
+    res.send('OTP verified successfully');
+  } else {
+    res.status(400).send('Invalid OTP');
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
