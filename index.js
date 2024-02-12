@@ -8,7 +8,6 @@ const multer = require('multer');
 
 // Google Drive API imports
 const { google } = require('googleapis');
-const googleapi = require('./googledriveapi.json');
 
 // app setup
 const app = express();
