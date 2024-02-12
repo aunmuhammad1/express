@@ -4,13 +4,66 @@ const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
 const fs = require('fs');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 
 // Google Drive API imports
 const { google } = require('googleapis');
+const SCOPE = ['https://www.googleapis.com/auth/drive'];
 
 // app setup
 const app = express();
 app.use(bodyParser.json());
+
+// awt autherization for google drive
+async function authorize(){
+  const jwtClient = new google.auth.JWT(
+      process.env.CLIENT_EMAIL,
+      null,
+      process.env.PRIVATE_KEY,
+      SCOPE
+  );
+  await jwtClient.authorize();
+  return jwtClient;
+}
+
+async function uploadFile(authClient, filePath, originalName) {
+  return new Promise((resolve, reject) => {
+      const drive = google.drive({ version: 'v3', auth: authClient });
+      var fileMetaData = {
+          name: originalName,    
+          parents: ['1w61H2wrd6bAsHOy2gjDr7wkTzS5WrbZQ'] // A folder ID to which file will get uploaded
+      };
+      drive.files.create({
+          resource: fileMetaData,
+          media: {
+              body: fs.createReadStream(filePath), // File that will get uploaded
+              mimeType: 'text/plain'
+          },
+          fields: 'id'
+      }, function (error, file) {
+          if (error) {
+              return reject(error);
+          }
+          resolve(file);
+      });
+  });
+}
+
+// Endpoint to upload files to Google Drive
+app.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+      return res.status(400).send('No file uploaded.');
+  }
+  authorize().then(authClient => {
+      return uploadFile(authClient, req.file.path, req.file.originalname);
+  }).then(file => {
+      res.send(`File was uploaded successfully. File ID: ${file.data.id}`);
+  }).catch(error => {
+      console.error('Failed to upload file:', error);
+      res.status(500).send('Failed to upload file.');
+  });
+});
 
 
 // mongoDB setup
